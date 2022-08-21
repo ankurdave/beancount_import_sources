@@ -14,7 +14,7 @@ def run_reconcile(extra_args):
 
     data_sources = [
         dict(
-            module='beancount_import_sources.sources.adp_payroll_source',
+            module='beancount_import_sources.adp_payroll_source',
             company_name='Hooli',
             earning_account_map={
                 'Earning: Regular': 'Income:Hooli:Salary:Base',
@@ -47,18 +47,18 @@ def run_reconcile(extra_args):
             data_dir=data_dir,
             json_filenames=glob.glob(os.path.join(data_dir, 'data/Hooli/Salary/*.json'))),
         dict(
-            module='beancount_import_sources.sources.venmo_json_source',
+            module='beancount_import_sources.venmo_json_source',
             data_dir=data_dir,
             self_username='John-Doe',
             venmo_assets_account='Assets:Venmo',
             json_filenames=glob.glob(os.path.join(data_dir, 'data/Venmo/*.json'))),
         dict(
-            module='beancount_import_sources.sources.cashapp_csv_source',
+            module='beancount_import_sources.cashapp_csv_source',
             cashapp_account='Assets:CashApp',
             data_dir=data_dir,
             csv_filenames=glob.glob(os.path.join(data_dir, 'data/CashApp/*.csv'))),
         dict(
-            module='beancount_import_sources.sources.costco_receipt_source',
+            module='beancount_import_sources.costco_receipt_source',
             food_stamp_eligible_expenses_account='Expenses:Food:Groceries:Costco',
             health_fsa_eligible_expenses_account='Expenses:Healthcare:Medicine:Costco',
             other_expenses_account='Expenses:Housing:Goods:Costco',
