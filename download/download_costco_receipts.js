@@ -4,7 +4,7 @@
 function getToken() {
     return new Promise(function (resolve, reject) {
         var tokenXhr = new XMLHttpRequest();
-        tokenXhr.open('GET', 'https://www.costco.com/security/users/10301/session/token');
+        tokenXhr.open('GET', 'https://www.costco.com/user-session-token');
         tokenXhr.setRequestHeader("Access-Control-Allow-Origin", "*");
         tokenXhr.onload = async function() {
             if (tokenXhr.status === 200) {
