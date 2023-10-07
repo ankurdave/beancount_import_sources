@@ -142,7 +142,7 @@ class AdpPayrollSource(Config, Source):
                                        [(transaction, None) for transaction in transactions]))
 
     def is_posting_cleared(self, posting: Posting):
-        return 'adp_payroll_posting_description' in posting.meta
+        return (posting.meta is not None) and ('adp_payroll_posting_description' in posting.meta)
 
 def load(spec, log_status):
     return AdpPayrollSource(log_status=log_status, **spec)
