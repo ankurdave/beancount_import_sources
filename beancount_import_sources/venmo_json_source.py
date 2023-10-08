@@ -67,7 +67,7 @@ class VenmoJsonSource(Config, Source):
             date=self.get_transaction_date(transaction),
             flag='*',
             payee=self.get_user_info(payee, 'display_name'),
-            narration='Venmo payment: ' + self.sanitize(payment['note']),
+            narration='Venmo ' + transaction['type'] + ': ' + self.sanitize(payment['note']),
             tags=EMPTY_SET,
             links=EMPTY_SET,
             postings=[])
@@ -165,8 +165,15 @@ class VenmoJsonSource(Config, Source):
             for transaction in data['data']['transactions']:
                 txn_id = transaction['id']
                 txn_type = transaction['type']
-                if txn_type == 'payment':
-                    payment = transaction[txn_type]
+                if txn_type == 'payment' or txn_type == 'refund':
+                    if txn_type == 'payment':
+                        payment = transaction['payment']
+                    elif txn_type == 'refund':
+                        # A refund has a nested payment object that contains the
+                        # transaction that was reversed.
+                        payment = transaction['refund']['payment']
+                    else:
+                        assert False, txn_type
                     actor_username = self.get_user_info(payment['actor'], 'username')
                     target_username = self.get_user_info(payment['target'], 'username')
                     if target_username == self.self_username:
@@ -189,6 +196,12 @@ class VenmoJsonSource(Config, Source):
                             amount_coef = 1
                         else:
                             assert False
+
+                    if txn_type == 'refund':
+                        # The payment contains the transaction that was
+                        # reversed. Flip the amount to produce a transaction
+                        # that will achieve the refund.
+                        amount_coef *= -1
 
                     # The outgoing payment is funded by an incoming transfer, or
                     # the incoming payment is directly transferred.
