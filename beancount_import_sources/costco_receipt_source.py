@@ -109,9 +109,8 @@ class CostcoReceiptSource(Config, Source):
                 # Gather all rebates so we can look them up for each item.
                 rebate_by_item_number = {}
                 for item in order['itemArray']:
-                    if (item['itemDescription01'] or '').startswith('/'):
-                        # Descriptions like "/1575321" indicate a rebate on that item number.
-                        item_number = int(item['itemDescription01'].lstrip('/'))
+                    item_number = self._rebated_item_number_if_rebate(item)
+                    if item_number is not None:
                         rebate_by_item_number[item_number] = item['amount']
 
                 if len(rebate_by_item_number) == 0:
@@ -130,14 +129,14 @@ class CostcoReceiptSource(Config, Source):
                                 flag=None))
 
                 for item in order['itemArray']:
-                    if (item['itemDescription01'] or '').startswith('/'): continue
+                    if self._rebated_item_number_if_rebate(item) is not None: continue
                     item_description_keys = [
                         'itemNumber', 'itemDescription01', 'itemDescription02'
                     ]
                     item_description_parts = [str(item[k]) for k in item_description_keys if item[k]]
                     item_amount = item['amount']
-                    if item['itemNumber'] in rebate_by_item_number:
-                        item_amount += rebate_by_item_number[item['itemNumber']]
+                    if str(item['itemNumber']) in rebate_by_item_number:
+                        item_amount += rebate_by_item_number[str(item['itemNumber'])]
                     desc_list = re.sub(' +', ' ', ' '.join(item_description_parts)).strip()
 
                     if item['itemIdentifier'] == 'E':
@@ -211,6 +210,20 @@ class CostcoReceiptSource(Config, Source):
 
     def is_posting_cleared(self, posting: Posting):
         return True
+
+    def _rebated_item_number_if_rebate(self, item) -> int:
+        if (item['itemDescription01'] or '').startswith('/'):
+            description = item['itemDescription01']
+        elif (item['frenchItemDescription1'] or '').startswith('/'):
+            # Receipts after ~2022-12-04 have used the frenchItemDescription1
+            # key to store the rebated item number.
+            description = item['frenchItemDescription1']
+        else:
+            return None
+
+        # Descriptions like "/1575321" indicate a rebate on that item number.
+        return description.lstrip('/')
+
 
 def load(spec, log_status):
     return CostcoReceiptSource(log_status=log_status, **spec)
