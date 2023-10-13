@@ -16,14 +16,12 @@ class Config(object):
     def __init__(self,
                  company_name,
                  earning_account_map, deduction_code_and_date_to_account,
-                 group_term_life_income_account, group_term_life_expenses_account,
-                 **kwargs):
+                 memo_map, **kwargs):
         super().__init__(**kwargs)
         self.company_name = company_name
         self.earning_account_map = earning_account_map
         self.deduction_code_and_date_to_account = deduction_code_and_date_to_account
-        self.group_term_life_income_account = group_term_life_income_account
-        self.group_term_life_expenses_account = group_term_life_expenses_account
+        self.memo_map = memo_map
 
 class AdpPayrollSource(Config, Source):
     def __init__(self, data_dir: str, json_filenames: List[str],
@@ -43,9 +41,6 @@ class AdpPayrollSource(Config, Source):
     def prepare(self, journal, results: SourceResults):
         for adp_account, beancount_account in self.earning_account_map.items():
             results.add_account(beancount_account)
-        results.add_account(self.group_term_life_income_account)
-        results.add_account(self.group_term_life_expenses_account)
-
         # Scan the journal to see which files we have already imported.
         existing_transactions_by_file = dict()
         for transaction in journal.all_entries:
@@ -106,23 +101,26 @@ class AdpPayrollSource(Config, Source):
                         flag=None))
 
             for memo in data['payStatement']['memos']:
-                if memo['nameCode']['codeValue'] != 'grouptermlife': continue
+                if memo['nameCode']['codeValue'] not in self.memo_map: continue
+                memo_income_account, memo_expense_account = \
+                    self.memo_map[memo['nameCode']['codeValue']]
                 if 'memoAmount' not in memo: continue
                 amount = self.to_amount(memo['memoAmount'])
+                memo_description = memo['nameCode']['shortName'].strip()
                 txn.postings.append(
                     Posting(
-                        account=self.group_term_life_income_account,
+                        account=memo_income_account,
                         units=-amount,
                         cost=None,
-                        meta={'adp_payroll_posting_description': 'Group Term Life'},
+                        meta={'adp_payroll_posting_description': memo_description},
                         price=None,
                         flag=None))
                 txn.postings.append(
                     Posting(
-                        account=self.group_term_life_expenses_account,
+                        account=memo_expense_account,
                         units=amount,
                         cost=None,
-                        meta={'adp_payroll_posting_description': 'Group Term Life'},
+                        meta={'adp_payroll_posting_description': memo_description},
                         price=None,
                         flag=None))
 
