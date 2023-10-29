@@ -104,7 +104,7 @@ class WorkdayPayrollSource(Config, Source):
                                 row['Pay Group Currency'],
                             )
                         else:
-                            raise f'Cannot determine amount from {row}'
+                            continue
                         if amount is None: continue
                         txn.postings.append(
                             Posting(
