@@ -91,7 +91,7 @@ class WorkdayPayrollSource(Config, Source):
                 if section_name not in self.item_date_to_account_by_section: continue
                 item_date_to_account = self.item_date_to_account_by_section[section_name]
                 for i, row in table.iterrows():
-                    accounts = item_date_to_account(row[0], date)
+                    accounts = item_date_to_account(row.iloc[0], date)
                     if isinstance(accounts, str):
                         accounts = [accounts]
                     for account in accounts:
@@ -111,7 +111,7 @@ class WorkdayPayrollSource(Config, Source):
                                 account=account,
                                 units=amount,
                                 cost=None,
-                                meta={'workday_payroll_posting_description': f'{section_name}: {row[0]}'},
+                                meta={'workday_payroll_posting_description': f'{section_name}: {row.iloc[0]}'},
                                 price=None,
                                 flag=None))
 
