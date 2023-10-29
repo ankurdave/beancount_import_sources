@@ -1,4 +1,5 @@
 from typing import List, Optional, Tuple, Dict, Set
+import glob
 import datetime
 import os
 import collections
@@ -24,11 +25,15 @@ class Config(object):
 
 
 class WorkdayPayrollSource(Config, Source):
-    def __init__(self, data_dir: str, xlsx_filenames: List[str], authoritative_accounts: List[str],
-                 **kwargs) -> None:
+    def __init__(self, data_dir: str, xlsx_dir: str,
+                 authoritative_accounts: List[str], **kwargs) -> None:
         super().__init__(**kwargs)
         self.data_dir = data_dir
-        self.xlsx_filenames = sorted([os.path.realpath(x) for x in xlsx_filenames])
+        self.xlsx_dir = xlsx_dir
+        self.xlsx_filenames = sorted([
+            os.path.realpath(x)
+            for x in glob.glob(os.path.join(os.path.join(data_dir, xlsx_dir), '*.xlsx'))
+        ])
         self.authoritative_accounts = authoritative_accounts
         self.example_posting_key_extractors = {'workday_payroll_posting_description': None}
 
@@ -57,6 +62,11 @@ class WorkdayPayrollSource(Config, Source):
             meta = transaction.meta
             if (meta and 'workday_payroll_source_file' in meta):
                 filename = meta['workday_payroll_source_file']
+                if not filename.startswith(self.xlsx_dir):
+                    # Ignore files outside the relevant directory. This allows
+                    # this source to be used multiple times with different
+                    # configurations.
+                    continue
                 existing_transactions_by_file.setdefault(filename, []).append(transaction)
 
         # Read all files and add pending entries not already imported into the journal.
