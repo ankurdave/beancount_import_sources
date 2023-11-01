@@ -1,3 +1,70 @@
+"""Source for Workday payslips in XLSX format.
+
+Workday exposes each payslip in XLSX format at (Employee profile icon) > View Profile > Pay > Payslips > View > (Export to Excel icon).
+
+Example usage:
+
+    data_dir = os.path.dirname(__file__)
+    data_sources = [
+        dict(
+            module='beancount_import_sources.workday_payroll_source',
+            data_dir=data_dir,
+            xlsx_dir='data/Hooli/Salary',
+            company_name='Hooli',
+            authoritative_accounts=[
+                'Income:Hooli:Salary:Base',
+                'Income:Hooli:Salary:Bonus',
+            ],
+            item_date_to_account_by_section={
+                'Earnings' : lambda item_name, date: {
+                    'Salary': 'Income:Hooli:Salary:Base',
+                    'Bonus': 'Income:Hooli:Salary:Bonus',
+                    'Group Term Life': [
+                        'Income:Hooli:GroupTermLife',
+                        'Expenses:LifeInsurance:HooliGroupTermLife',
+                    ],
+                }[item_name],
+                'Employee Taxes': lambda item_name, date: {
+                    'Federal Withholding': f'Expenses:Tax:FY{date.year}:Income:Federal',
+                    'OASDI': f'Expenses:Tax:FY{date.year}:Income:SocialSecurity',
+                    'Medicare': f'Expenses:Tax:FY{date.year}:Income:Medicare',
+                    'State Tax - PA': f'Expenses:Tax:FY{date.year}:Income:Pennsylvania',
+                    'SUI-Employee Paid - PA': f'Expenses:Tax:FY{date.year}:Income:PennsylvaniaUnemploymentInsurance',
+                    'City Tax - PITTS': f'Expenses:Tax:FY{date.year}:Income:Pittsburgh',
+                    'PA LST - PITTS': f'Expenses:Tax:FY{date.year}:Income:Pittsburgh',
+                }[item_name],
+                'Employee Pre Tax Deductions': lambda item_name, date: {
+                    'Dental': 'Expenses:Healthcare:Insurance',
+                    'Medical': 'Expenses:Healthcare:Insurance',
+                    'Vision': 'Expenses:Healthcare:Insurance',
+                    'HSA': 'Assets:HooliHSA:Cash',
+                    '401k': 'Assets:Hooli401k:Cash',
+                }[item_name],
+                'Employee Post Tax Deductions': lambda item_name, date: {
+                    '401K Post Tax': 'Assets:Hooli401k:Cash',
+                }[item_name],
+                'Employer Paid Benefits': lambda item_name, date: {
+                    'HSA ER': [
+                        'Income:Hooli:HSAContribution',
+                        'Assets:HooliHSA:Cash',
+                    ],
+                    'Basic Life & AD&D ER': [],
+                    'Dental ER': [],
+                    'Long Term Disability ER': [],
+                    'Medical ER': [],
+                    'Short Term Disability ER': [],
+                    'Vision ER': [],
+                }[item_name],
+                'Payment Information': lambda item_name, date: {
+                    'Bank of America NA': 'Assets:BankOfAmerica:Checking',
+                }[item_name],
+            },
+        ),
+    ]
+    beancount_import.webserver.main(data_sources=data_sources, ...)
+
+"""
+
 from typing import List, Optional, Tuple, Dict, Set
 import glob
 import datetime

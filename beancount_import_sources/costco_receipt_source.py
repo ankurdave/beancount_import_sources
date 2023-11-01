@@ -1,10 +1,36 @@
 """Source for Costco receipts in JSON format.
 
+Costco exposes this data through a GraphQL API. Follow the instructions in
+`../download/download_costco_receipts.js`.
+
 The resulting transactions can have a large number of postings, since there is at least one per item
 purchased. To avoid triggering exponential behavior in beancount-import, the Expenses account for
 each item must be specified explicitly in the configuration. We use the item identifier and tax flag
 to categorize each item into one of 3 categories: (1) food-stamp eligible, (2) health FSA eligible,
 and (3) all other purchases. This source is authoritative for each of these 3 accounts.
+
+Example usage:
+
+    data_dir = os.path.dirname(__file__)
+    data_sources = [
+        dict(
+            module='beancount_import_sources.costco_receipt_source',
+            food_stamp_eligible_expenses_account='Expenses:Food:Groceries:Costco',
+            health_fsa_eligible_expenses_account='Expenses:Healthcare:MedicineAndHealthProducts:Costco',
+            other_expenses_account='Expenses:Housing:Goods:Costco',
+            discount_expenses_account='Expenses:Costco:Discounts',
+            sales_tax_expenses_account='Expenses:Tax:Sales:Costco',
+            rewards_tender_account='Income:Rewards:Costco',
+            cash_tender_account='Expenses:Cash:Costco',
+            tender_account_from_description=lambda tender_description: {
+                'COSTCO VISA, 1234': 'Liabilities:Citi:Costco',
+                'RTC Whse Purchase, 1234': 'Liabilities:Citi:Costco',
+            }[tender_description],
+            data_dir=data_dir,
+            json_filenames=glob.glob(os.path.join(data_dir, 'data/Costco/*.json')),
+        ),
+    ]
+    beancount_import.webserver.main(data_sources=data_sources, ...)
 
 """
 

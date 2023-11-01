@@ -2,6 +2,20 @@
 
 To download a CSV, go to https://cash.app/account/activity and click Statements
 -> Export CSV.
+
+Example usage:
+
+    data_dir = os.path.dirname(__file__)
+    data_sources = [
+        dict(
+            module='beancount_import_sources.cashapp_csv_source',
+            cashapp_account='Assets:CashApp',
+            data_dir=data_dir,
+            csv_filenames=glob.glob(os.path.join(data_dir, 'data/CashApp/*.csv'))
+        ),
+    ]
+    beancount_import.webserver.main(data_sources=data_sources, ...)
+
 """
 
 from typing import List, Optional, Tuple, Dict, Set

@@ -1,4 +1,22 @@
-"""Bank of America mortgage statement CSV source.
+"""Source for Bank of America mortgage statements in CSV format.
+
+Example usage:
+
+    data_dir = os.path.dirname(__file__)
+    data_sources = [
+        dict(
+            module='beancount_import_sources.boa_mortgage_csv_source',
+            payment_account='Assets:BankOfAmerica:Mortgage:Payment',
+            loan_balance_account='Liabilities:BankOfAmerica:Mortgage:Loan',
+            interest_account='Expenses:BankOfAmerica:Mortgage:Interest',
+            escrow_account='Assets:BankOfAmerica:Mortgage:Escrow',
+            fees_account='Expenses:BankOfAmerica:Mortgage:Fees',
+            data_dir=data_dir,
+            csv_filenames=glob.glob(os.path.join(data_dir, 'data/BankOfAmerica/Mortgage/*.csv'))
+        ),
+    ]
+    beancount_import.webserver.main(data_sources=data_sources, ...)
+
 """
 
 from typing import List, Optional, Tuple, Dict, Set

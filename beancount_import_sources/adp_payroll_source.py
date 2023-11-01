@@ -1,3 +1,56 @@
+"""Source for ADP paystubs in JSON format.
+
+ADP exposes this data through a REST API. Follow the instructions in
+`../download/download_adp_paystubs.js` to download it.
+
+Example usage:
+
+    data_dir = os.path.dirname(__file__)
+    data_sources = [
+        dict(
+            module='beancount_import_sources.adp_payroll_source',
+            company_name='Hooli',
+            earning_account_map={
+                'Earning: Regular': 'Income:Hooli:Salary:Base',
+                'Earning: Retro': 'Income:Hooli:Salary:Base',
+                'Earning: Bonus': 'Income:Hooli:Salary:Bonus',
+                'Earning: Spot': 'Income:Hooli:Salary:Bonus',
+            },
+            deduction_code_and_date_to_account= lambda deduction_code_name, date: {
+                'Taxes: Federal Income Tax': f'Expenses:Tax:FY{date.year}:Income:Federal',
+                'Taxes: Social Security Tax': f'Expenses:Tax:FY{date.year}:Income:SocialSecurity',
+                'Taxes: Medicare Tax': f'Expenses:Tax:FY{date.year}:Income:Medicare',
+                'Taxes: Medicare Surtax': f'Expenses:Tax:FY{date.year}:Income:Medicare',
+                'Taxes: CA State Income Tax': f'Expenses:Tax:FY{date.year}:Income:California',
+                'Taxes: CA SDI Tax': f'Expenses:Tax:FY{date.year}:Income:CaliforniaUnemploymentAndDisabilityInsurance',
+                'Taxes: CA SUI/SDI Tax': f'Expenses:Tax:FY{date.year}:Income:CaliforniaUnemploymentAndDisabilityInsurance',
+                'Benefits: Dental Pretax': 'Expenses:Healthcare:Insurance',
+                'Benefits: Medical Pretax': 'Expenses:Healthcare:Insurance',
+                'Benefits: Vision Pretax': 'Expenses:Healthcare:Insurance',
+                'Benefits: Hsa Pretax': 'Assets:HooliHSA:Cash',
+                'Retirement: 401K Plan': 'Assets:Hooli401k:Cash',
+                'Other: After-Tax 415C': 'Assets:Hooli401k:Cash',
+                'Other: Reimbursement': 'Assets:Receivable:Hooli',
+                'Banking: Checking 1': 'Assets:BankOfAmerica:Checking',
+            }[deduction_code_name],
+            memo_map={
+                'grouptermlife': [
+                    'Income:Hooli:GroupTermLife',
+                    'Expenses:LifeInsurance:HooliGroupTermLife',
+                ],
+                'erhsa': [
+                    'Income:Hooli:HSAContribution',
+                    'Assets:HooliHSA:Cash',
+                ],
+            },
+            data_dir=data_dir,
+            json_filenames=glob.glob(os.path.join(data_dir, 'data/Hooli/Salary/*.json')),
+        ),
+    ]
+    beancount_import.webserver.main(data_sources=data_sources, ...)
+
+"""
+
 from typing import List, Optional, Tuple, Dict, Set
 import datetime
 import os

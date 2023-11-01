@@ -1,6 +1,7 @@
-"""Emburse Chrome River reimbursement source.
+"""Source for Emburse Chrome River reimbursements in CSV format.
 
-Imports expense items from Inquiry > Expense > My Expense Items > Export.
+Emburse Chrome River exposes this data in XLSX format at Inquiry > Expense > My
+Expense Items > Export. You must convert them to CSV format manually.
 
 Emburse Chrome River groups expense items into expense reports. This source
 creates one transaction for each expense report. The transaction indicates that
@@ -9,6 +10,20 @@ contains two postings for each expense item: one that subtracts the amount from
 the expense account (listed as Expenses:FIXME to allow selecting the appropriate
 expense account), and one that adds the amount to the assets-receivable account
 specified in the `receivable_account` config parameter.
+
+Example usage:
+
+    data_dir = os.path.dirname(__file__)
+    data_sources = [
+        dict(
+            module='beancount_import_sources.emburse_chrome_river_source',
+            data_dir=data_dir,
+            csv_filenames=glob.glob(os.path.join(data_dir, 'data/Hooli/Emburse/*.csv')),
+            receivable_account='Assets:Receivable:Hooli',
+            company_name='Hooli',
+        ),
+    ]
+    beancount_import.webserver.main(data_sources=data_sources, ...)
 
 """
 
@@ -29,9 +44,10 @@ from beancount_import.matching import FIXME_ACCOUNT
 
 
 class Config(object):
-    def __init__(self, receivable_account, **kwargs):
+    def __init__(self, receivable_account, company_name, **kwargs):
         super().__init__(**kwargs)
         self.receivable_account = receivable_account
+        self.company_name = company_name
 
 
 class EmburseChromeRiverSource(Config, Source):
@@ -99,7 +115,7 @@ class EmburseChromeRiverSource(Config, Source):
                     meta=collections.OrderedDict(),
                     date=expense_items[0].approval_date,
                     flag='*',
-                    payee='Databricks',
+                    payee=self.company_name,
                     narration=f'Expense report: {expense_items[0].report_name}',
                     tags=EMPTY_SET,
                     links=EMPTY_SET,

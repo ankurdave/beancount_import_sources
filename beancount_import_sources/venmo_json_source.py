@@ -9,6 +9,20 @@ To download a JSON file containing your transaction history:
 
 3. Go to https://api.venmo.com/v1/transaction-history?start_date=2022-01-01&end_date=2022-12-31&profile_id=<YOUR_USER_ID>&account_type=personal
 
+Example usage:
+
+    data_dir = os.path.dirname(__file__)
+    data_sources = [
+        dict(
+            module='beancount_import_sources.venmo_json_source',
+            data_dir=data_dir,
+            self_username='John-Doe',
+            venmo_assets_account='Assets:Venmo',
+            json_filenames=glob.glob(os.path.join(data_dir, 'data/Venmo/*.json')),
+        ),
+    ]
+    beancount_import.webserver.main(data_sources=data_sources, ...)
+
 """
 
 from typing import List, Optional, Tuple, Dict, Set
