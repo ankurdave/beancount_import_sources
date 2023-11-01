@@ -154,9 +154,9 @@ class CostcoReceiptSource(Config, Source):
                             meta={
                                 'costco_receipt_item_description': desc_list,
                                 # 'E' for food stamp eligible, 'F' for FSA eligible, '' for neither.
-                                'costco_receipt_item_identifier': item['itemIdentifier'],
+                                'costco_receipt_item_identifier': item['itemIdentifier'] or '',
                                 # 'A' for taxable, '' for non-taxable.
-                                'costco_receipt_tax_flag': item['taxFlag'],
+                                'costco_receipt_tax_flag': item['taxFlag'] or '',
                             },
                             price=None,
                             flag=None))
