@@ -70,6 +70,11 @@ class EmburseChromeRiverSource(Config, Source):
             number = Decimal(s.replace('$', '').replace(',', '').strip())
         return Amount(currency='USD', number=number)
 
+    def _drop_trailing_nones(self, l: list) -> list:
+        while len(l) > 0 and (l[-1] is None or l[-1].strip() == ''):
+            l.pop()
+        return l
+
     def prepare(self, journal, results: SourceResults):
         # Scan the journal to see which transactions we have already imported.
         # Transactions are identified by report id.
@@ -86,7 +91,7 @@ class EmburseChromeRiverSource(Config, Source):
         for filename in self.csv_filenames:
             self.log_status('emburse_chrome_river: processing %s' % (filename, ))
             with open(filename) as f:
-                rows = list(csv.reader(f))[1:-2]
+                rows = list(csv.reader(f))[1:]
             relative_filename = os.path.relpath(filename, start=self.data_dir)
 
             # Group expense items by report id.
@@ -95,25 +100,29 @@ class EmburseChromeRiverSource(Config, Source):
                 ('transaction_date', datetime.date),
                 ('expense_type', str),
                 ('amount', Amount),
-                ('approval_date', datetime.date),
                 ('business_purpose', str),
                 ('report_id', str)])
             expense_items_by_report_id = dict()
             for row in rows:
+                # Skip header rows.
+                if row[0] == 'Report Name': continue
+                # Skip summary rows
+                if len(self._drop_trailing_nones(row)) != 14: continue
+
                 expense_item = ExpenseItem(
                     report_name = row[0],
                     transaction_date = datetime.datetime.strptime(row[1], '%m/%d/%y').date(),
                     expense_type = row[2],
                     amount = Amount(currency=row[9], number=Decimal(row[8])),
-                    approval_date = datetime.datetime.strptime(row[10], '%m/%d/%y').date(),
                     business_purpose = row[11],
                     report_id = row[12])
                 expense_items_by_report_id.setdefault(expense_item.report_id, []).append(expense_item)
 
             for report_id, expense_items in expense_items_by_report_id.items():
+                last_transaction_date = max(e.transaction_date for e in expense_items)
                 txn = Transaction(
                     meta=collections.OrderedDict(),
-                    date=expense_items[0].approval_date,
+                    date=last_transaction_date,
                     flag='*',
                     payee=self.company_name,
                     narration=f'Expense report: {expense_items[0].report_name}',
